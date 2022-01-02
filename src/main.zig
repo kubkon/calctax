@@ -28,13 +28,15 @@ pub fn main() anyerror!void {
         const health_ins_due = (@intToFloat(f32, gross_income) - zus_due) * 0.09;
         const tax_base = @intToFloat(f32, gross_income) - zus_due - standard_income_cost;
         const tax_due = calcTax(tax_base, prev_tax_sum);
+        const net_pay = @intToFloat(f32, gross_income) - zus_due - health_ins_due - tax_due;
         prev_tax_sum += tax_base;
-        std.log.info("{d}: zus = {d:.4}, health ins = {d:.4}, tax_base = {d:.4}, tax_due = {d:.4}", .{
+        std.log.info("{d}: zus = {d:.4}, health ins = {d:.4}, tax_base = {d:.4}, tax_due = {d:.4}, net_pay = {d:.4}", .{
             month + 1,
             zus_due,
             health_ins_due,
             tax_base,
             tax_due,
+            net_pay,
         });
     }
 }
