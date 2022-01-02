@@ -1,11 +1,33 @@
 const std = @import("std");
 const fmt = std.fmt;
+const io = std.io;
 const mem = std.mem;
 const process = std.process;
 
 var gpa_allocator = std.heap.GeneralPurposeAllocator(.{}){};
 var is_zus_paid_in_full: bool = false;
 var is_second_clif: bool = false;
+
+fn usage() !void {
+    const msg =
+        \\Usage: pit <gross_income> [-r]
+        \\       pit -f <file_path> [-r]
+        \\       pit -h,--help
+        \\
+        \\General options:
+        \\-f             Parse gross income from text file
+        \\-r             Apply tax relief
+        \\-h, --help     Print this help message and exit
+    ;
+    return io.getStdOut().writeAll(msg);
+}
+
+fn fatal(comptime format: []const u8, args: anytype) noreturn {
+    const msg = fmt.allocPrint(gpa_allocator.allocator(), "fatal: " ++ format ++ "\n", args) catch process.exit(1);
+    defer gpa_allocator.allocator().free(msg);
+    io.getStdErr().writeAll(msg) catch process.exit(1);
+    process.exit(1);
+}
 
 pub fn main() anyerror!void {
     var arena_allocator = std.heap.ArenaAllocator.init(gpa_allocator.allocator());
@@ -14,8 +36,31 @@ pub fn main() anyerror!void {
 
     const args = try process.argsAlloc(arena);
 
-    const gross_income = @intToFloat(f32, try fmt.parseInt(u32, args[1], 10));
-    const use_relief: bool = if (args.len > 2) mem.eql(u8, args[2], "relief") else false;
+    if (args.len == 1) {
+        fatal("no arguments specified", .{});
+    }
+
+    var input_file: ?[]const u8 = null;
+    var gross_income: f32 = 0;
+    var use_relief: bool = false;
+
+    var i: usize = 1;
+    while (i < args.len) : (i += 1) {
+        const arg = args[i];
+        if (mem.eql(u8, arg, "-f")) {
+            if (args.len == i + 1) fatal("expected argument after '-f'", .{});
+            input_file = args[i + 1];
+            i += 1;
+        } else if (mem.eql(u8, arg, "-r")) {
+            use_relief = true;
+        } else if (mem.eql(u8, arg, "-h") or mem.eql(u8, arg, "--help")) {
+            try usage();
+            return;
+        } else {
+            gross_income = @intToFloat(f32, try fmt.parseInt(u32, args[1], 10));
+        }
+    }
+
     const standard_income_cost: f32 = 250.0;
 
     var month: usize = 0;
