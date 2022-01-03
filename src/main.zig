@@ -109,7 +109,7 @@ fn calcTax(tax_base: f32, prev_tax_sum: f32) f32 {
         is_second_clif = true;
         break :blk (clif - prev_tax_sum) * 0.17 + (tax_base - clif + prev_tax_sum) * 0.32;
     } else tax_base * 0.17;
-    return tax - 425;
+    return if (tax - 425 < 0) 0 else tax - 425;
 }
 
 fn calcRelief(gross_income: f32) f32 {
